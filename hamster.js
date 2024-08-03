@@ -75,7 +75,8 @@ class HamsterUser {
 
     nextReward() {
         const now = new Date();
-        const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 3).getTime();
+        const zeroDay = new Date(0);
+        const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),  zeroDay.getHours() - zeroDay.getUTCHours()).getTime();
         const tomorrow = new Date(today + (24 * 3600 * 1000)).getTime();
 
         const number = Math.round((tomorrow - now.getTime()) / 1000);
