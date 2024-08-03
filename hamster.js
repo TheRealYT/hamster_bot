@@ -33,7 +33,7 @@ class HamsterUser {
         return this.getUser()
             + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1 Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}\n`
             + `${HamsterUser.mark(this.isCipherClaimed())} 2 Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
-            + `${HamsterUser.mark(this.isComboClaimed())} 3 Daily Combo (${this.formatSeconds(this.nextCipher())}) - ${this.getCombos().join(', ')}\n`
+            + `${HamsterUser.mark(this.isComboClaimed())} 3 Daily Combo (${this.formatSeconds(this.nextCombo())}) - ${this.getCombos().join(', ')}\n`
             + `${HamsterUser.mark(this.isMiniGameClaimed())} 4 Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
     }
 
