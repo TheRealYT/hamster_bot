@@ -349,8 +349,8 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
         });
     } else {
         await user.claimMiniGame(async () => {
-            await new Promise(res => setTimeout(res, Math.round(15_000 * Math.random())))
-                `0${Math.random() * (399999999 - 200000000) + 200000000}`;
+            await new Promise(res => setTimeout(res, Math.round(15_000 * Math.random())));
+            return `0${Math.random() * (399999999 - 200000000) + 200000000}`;
         });
         await botAPI.answerCallbackQuery(callback_query.id, {
             text: `✅ Daily Key Claimed, ${time}`,
