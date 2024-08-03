@@ -1,0 +1,15 @@
+{
+  "name": "hamster_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "tunnel:pinggy": "ssh -p 443 -R0:127.0.0.1:3000 a.pinggy.io",
+    "tunnel:serveo": "ssh -R 80:127.0.0.1:3000 serveo.net"
+  },
+  "private": true,
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
