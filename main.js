@@ -399,8 +399,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
 });
 
 botAPI.start({
-    baseUrl: 'https://dd866d71c7cf389f03d4510415775d28.serveo.net',
-    path: '4fb50ede5e4006d108ba626f51e0fbc18151c3045b648d3862b8829e7d61d429e07142d0beb3491287047b6722c9c1ebcabedc452cfc55d499860961fc3fbdb6',
+    baseUrl: process.env.BOT_ENDPOINT,
     resetWebhook: true,
 })
     .then(console.log)
