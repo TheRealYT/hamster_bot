@@ -1,14 +1,14 @@
+const mongoose = require('mongoose');
 const {BotServer} = require('./bot-api/BotServer');
 const {UpdateType} = require('./bot-api/Update');
 const {privateMessage, message, callbackData, privateQuery, context} = require('./bot-api/filter');
 const {Queries} = require('./constants');
 const {HamsterUser} = require('./hamster');
 const {urlParseHashParams} = require('./urlDecoder');
+const {Credential} = require('./User');
 
 const API_KEY = process.env.BOT_TOKEN;
 const botAPI = new BotServer(API_KEY);
-
-const credentials = {};
 
 function getKeyboard(id) {
     return {
@@ -30,40 +30,44 @@ function getKeyboard(id) {
                     text: '🕹️ Claim Mini Game',
                     callback_data: `claim_game_${id}`,
                 }],
-                [{
-                    text: '⁐ Refresh',
-                    callback_data: `claim_refresh_${id}`,
-                }],
-                [{
-                    text: '< Accounts',
-                    callback_data: `claim_users_${id}`,
-                }],
+                [
+                    {
+                        text: '< Accounts',
+                        callback_data: `claim_users_${id}`,
+                    },
+                    {
+                        text: '⁐ Refresh',
+                        callback_data: `claim_refresh_${id}`,
+                    },
+                ],
             ],
         },
     };
 }
 
-function getAccounts(chatId) {
-    if (chatId in credentials && Object.keys(credentials[chatId]).length > 0) {
-        const inline_keyboard = [];
+async function getAccounts(chatId) {
+    const found = await Credential.find({
+        userId: chatId.toString(),
+    }).exec();
 
-        for (const [id, credential] of Object.entries(credentials[chatId])) {
-            const {name} = credential;
+    if (found.length === 0)
+        return null;
 
-            inline_keyboard.push([{
-                text: name,
-                callback_data: `claim_user_${id}`,
-            }]);
-        }
+    const inline_keyboard = [];
 
-        return {
-            reply_markup: {
-                inline_keyboard,
-            },
-        };
+    for (const {name, targetUserId: id} of found) {
+
+        inline_keyboard.push([{
+            text: name,
+            callback_data: `claim_user_${id}`,
+        }]);
     }
 
-    return null;
+    return {
+        reply_markup: {
+            inline_keyboard,
+        },
+    };
 }
 
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}, ctx, end) => {
@@ -77,7 +81,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async (
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/accounts'), async ({message}, ctx, end) => {
     const chatId = message.chat.id;
 
-    const extra = getAccounts(chatId);
+    const extra = await getAccounts(chatId);
     if (extra != null)
         await botAPI.sendMessage(chatId, 'These are your accounts', extra);
     else
@@ -223,10 +227,15 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 await user.init();
                 const id = user.getId();
 
-                if (!(chatId in credentials))
-                    credentials[chatId] = {};
-
-                credentials[chatId][id] = {token, name: user.getUsernames()};
+                await Credential.findOneAndUpdate({
+                    usersId: `${chatId}${id}`,
+                }, {
+                    targetUserId: id,
+                    userId: chatId.toString(),
+                    usersId: `${chatId}${id}`,
+                    name: user.getUsernames(),
+                    token,
+                }, {upsert: true}).exec();
 
                 const summery = user.getSummary();
 
@@ -253,13 +262,14 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.all), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
 
-    if (chatId in credentials && ctx.id in credentials[chatId]) {
-        const {token} = credentials[chatId][ctx.id];
+    const credential = await Credential.findOne({
+        usersId: `${chatId}${ctx.id}`,
+    }).exec();
 
-        const user = new HamsterUser(token);
-        await user.init();
+    if (credential != null) {
+        const user = new HamsterUser(credential.token);
         ctx.user = user;
-
+        await user.init();
         return;
     }
 
@@ -386,7 +396,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'users'), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
     const messageId = callback_query.message.message_id;
-    const extra = getAccounts(chatId);
+    const extra = await getAccounts(chatId);
 
     if (extra != null)
         await botAPI.editMessageText(chatId, messageId, 'These are your accounts', extra);
@@ -398,9 +408,21 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
     end();
 });
 
-botAPI.start({
-    baseUrl: process.env.BOT_ENDPOINT,
-    resetWebhook: true,
-})
-    .then(console.log)
-    .catch(console.error);
+;(async () => {
+    while (true)
+        try {
+            await mongoose.connect(process.env.MONGODB_URI);
+            console.log('Database connected');
+            break;
+        } catch (e) {
+            console.log(e);
+            await new Promise(res => setTimeout(res, 15_000));
+        }
+
+    await botAPI.start({
+        baseUrl: process.env.BOT_ENDPOINT,
+        resetWebhook: true,
+    });
+
+    console.log('Bot server started');
+})();
