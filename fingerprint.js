@@ -13,7 +13,7 @@ function getRandomNumber(min, max) {
 function fingerprintRnd() {
     const timezones = [
         'Africa/Addis_Ababa', 'America/New_York', 'Asia/Tokyo', 'Europe/London', 'America/Los_Angeles',
-        'Asia/Shanghai', 'Asia/Kolkata', 'Australia/Sydney', 'Europe/Berlin', 'America/Sao_Paulo'
+        'Asia/Shanghai', 'Asia/Kolkata', 'Australia/Sydney', 'Europe/Berlin', 'America/Sao_Paulo',
     ];
     const mobilePlatforms = ['Android', 'iPhone', 'iPad', 'iPod'];
     const languages = ['en-US', 'es-ES', 'fr-FR', 'zh-CN', 'de-DE', 'ja-JP', 'ru-RU', 'ar-SA', 'pt-BR', 'hi-IN'];
@@ -23,7 +23,10 @@ function fingerprintRnd() {
         'version': '4.2.1',
         'visitorId': Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
         'components': {
-            'fonts': {'value': getRandomValueFromArray(['sans-serif-thin', 'serif', 'monospace', 'cursive']), 'duration': getRandomNumber(0, 100)},
+            'fonts': {
+                'value': getRandomValueFromArray(['sans-serif-thin', 'serif', 'monospace', 'cursive']),
+                'duration': getRandomNumber(0, 100),
+            },
             'domBlockers': {'value': [], 'duration': getRandomNumber(0, 100)},
             'fontPreferences': {
                 'value': {
@@ -37,14 +40,29 @@ function fingerprintRnd() {
                 }, 'duration': getRandomNumber(0, 100),
             },
             'audio': {'value': getRandomNumber(0, 0.0001), 'duration': getRandomNumber(0, 100)},
-            'screenFrame': {'value': [getRandomNumber(0, 1000), getRandomNumber(0, 1000), getRandomNumber(0, 1000), getRandomNumber(0, 1000)], 'duration': getRandomNumber(0, 100)},
+            'screenFrame': {
+                'value': [getRandomNumber(0, 1000), getRandomNumber(0, 1000), getRandomNumber(0, 1000), getRandomNumber(0, 1000)],
+                'duration': getRandomNumber(0, 100),
+            },
             'canvas': null,
             'osCpu': {'duration': getRandomNumber(0, 100)},
             'languages': {'value': [getRandomValueFromArray(languages)], 'duration': getRandomNumber(0, 100)},
-            'colorDepth': {'value': [24, 30, 36, 48][Math.floor(Math.random() * 4)], 'duration': getRandomNumber(0, 100)},
-            'deviceMemory': {'value': [4, 8, 16, 32][Math.floor(Math.random() * 4)], 'duration': getRandomNumber(0, 100)},
-            'screenResolution': {'value': [getRandomNumber(800, 1920), getRandomNumber(600, 1080)], 'duration': getRandomNumber(0, 100)},
-            'hardwareConcurrency': {'value': [2, 4, 8, 16][Math.floor(Math.random() * 4)], 'duration': getRandomNumber(0, 100)},
+            'colorDepth': {
+                'value': [24, 30, 36, 48][Math.floor(Math.random() * 4)],
+                'duration': getRandomNumber(0, 100),
+            },
+            'deviceMemory': {
+                'value': [4, 8, 16, 32][Math.floor(Math.random() * 4)],
+                'duration': getRandomNumber(0, 100),
+            },
+            'screenResolution': {
+                'value': [getRandomNumber(800, 1920), getRandomNumber(600, 1080)],
+                'duration': getRandomNumber(0, 100),
+            },
+            'hardwareConcurrency': {
+                'value': [2, 4, 8, 16][Math.floor(Math.random() * 4)],
+                'duration': getRandomNumber(0, 100),
+            },
             'timezone': {'value': getRandomValueFromArray(timezones), 'duration': getRandomNumber(0, 100)},
             'sessionStorage': {'value': getRandomBoolean(), 'duration': getRandomNumber(0, 100)},
             'localStorage': {'value': getRandomBoolean(), 'duration': getRandomNumber(0, 100)},
@@ -54,13 +72,23 @@ function fingerprintRnd() {
             'platform': {'value': getRandomValueFromArray(mobilePlatforms), 'duration': getRandomNumber(0, 100)},
             'plugins': {'value': [], 'duration': getRandomNumber(0, 100)},
             'touchSupport': {
-                'value': {'maxTouchPoints': getRandomNumber(1, 10), 'touchEvent': getRandomBoolean(), 'touchStart': getRandomBoolean()},
+                'value': {
+                    'maxTouchPoints': getRandomNumber(1, 10),
+                    'touchEvent': getRandomBoolean(),
+                    'touchStart': getRandomBoolean(),
+                },
                 'duration': getRandomNumber(0, 100),
             },
-            'vendor': {'value': ['Google Inc.', 'Apple Inc.', 'Mozilla'][Math.floor(Math.random() * 3)], 'duration': getRandomNumber(0, 100)},
+            'vendor': {
+                'value': ['Google Inc.', 'Apple Inc.', 'Mozilla'][Math.floor(Math.random() * 3)],
+                'duration': getRandomNumber(0, 100),
+            },
             'vendorFlavors': {'value': [], 'duration': getRandomNumber(0, 100)},
             'cookiesEnabled': {'value': getRandomBoolean(), 'duration': getRandomNumber(0, 100)},
-            'colorGamut': {'value': ['srgb', 'p3', 'rec2020'][Math.floor(Math.random() * 3)], 'duration': getRandomNumber(0, 100)},
+            'colorGamut': {
+                'value': ['srgb', 'p3', 'rec2020'][Math.floor(Math.random() * 3)],
+                'duration': getRandomNumber(0, 100),
+            },
             'invertedColors': {'duration': getRandomNumber(0, 100)},
             'forcedColors': {'value': getRandomBoolean(), 'duration': getRandomNumber(0, 100)},
             'monochrome': {'value': getRandomNumber(0, 100), 'duration': getRandomNumber(0, 100)},
