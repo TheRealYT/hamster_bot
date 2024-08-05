@@ -30,6 +30,10 @@ class BotAPI {
         return this.request('getUpdates', body);
     }
 
+    getChatMember(chat_id, user_id) {
+        return this.request('getChatMember', {chat_id, user_id});
+    }
+
     answerCallbackQuery(callback_query_id, extra = {}) {
         return this.request('answerCallbackQuery', {...extra, callback_query_id});
     }

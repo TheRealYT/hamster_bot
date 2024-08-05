@@ -10,7 +10,10 @@ function privateQuery({callback_query}, ctx, next) {
 
 function callbackData(filter) {
     return ({callback_query}, ctx, next) => {
-        if (Array.isArray(filter)) {
+        if (typeof filter == 'string') {
+            if (callback_query.data === filter)
+                return;
+        } else if (Array.isArray(filter)) {
             for (const key of filter) {
                 if (callback_query.data === key)
                     return;

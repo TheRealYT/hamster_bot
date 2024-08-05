@@ -6,9 +6,32 @@ const {Queries} = require('./constants');
 const {HamsterUser} = require('./hamster');
 const {urlParseHashParams} = require('./urlDecoder');
 const {Credential} = require('./User');
+const {fingerprint, chromeV} = require('./fingerprint');
 
 const API_KEY = process.env.BOT_TOKEN;
 const botAPI = new BotServer(API_KEY);
+
+function getChannel(share = false) {
+    const inline_keyboard = [
+        [{
+            text: 'Join Channel',
+            url: `https://t.me/${process.env.TG_CHANNEL.substring(1)}`,
+        }],
+    ];
+
+    if (share) {
+        inline_keyboard.push([{
+            text: 'Share To Account',
+            url: `https://t.me/share/url?url=${encodeURIComponent('https://t.me/' + process.env.TG_CHANNEL.substring(1))}`,
+        }]);
+    }
+
+    return {
+        reply_markup: {
+            inline_keyboard,
+        },
+    };
+}
 
 function getKeyboard(id) {
     return {
@@ -32,8 +55,8 @@ function getKeyboard(id) {
                 }],
                 [
                     {
-                        text: '< Accounts',
-                        callback_data: `claim_users_${id}`,
+                        text: '« Accounts',
+                        callback_data: Queries.CLAIM_USERS,
                     },
                     {
                         text: '⁐ Refresh',
@@ -56,7 +79,6 @@ async function getAccounts(chatId) {
     const inline_keyboard = [];
 
     for (const {name, targetUserId: id} of found) {
-
         inline_keyboard.push([{
             text: name,
             callback_data: `claim_user_${id}`,
@@ -70,10 +92,28 @@ async function getAccounts(chatId) {
     };
 }
 
+async function isMember(chat_id, user_id) {
+    const member = await botAPI.getChatMember(chat_id, user_id);
+    return member.ok && ['creator', 'administrator', 'member'].includes(member?.result?.status);
+}
+
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}, ctx, end) => {
     const chatId = message.chat.id;
 
     await botAPI.sendMessage(chatId, '👋 Hi there, please send me you hamster mini app link (you can send multiple links one after the other).\n\nNeed help? watch this https://youtube.com');
+});
+
+botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end) => {
+    const chatId = message.chat.id;
+
+    if (await isMember(process.env.TG_CHANNEL, chatId)) {
+        if (message.text === '/start')
+            end();
+
+        return;
+    }
+
+    await botAPI.sendMessage(chatId, 'Please join the channel and start the bot again.', getChannel());
 
     end();
 });
@@ -94,11 +134,12 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     const chatId = message.chat.id;
     try {
         const url = new URL(message.text);
-        if (url.origin !== 'https://hamsterkombatgame.io')
+        if (url.origin !== 'https://hamsterkombatgame.io' && url.origin !== 'https://hamsterkombat.io')
             throw new Error();
 
         const decoded = urlParseHashParams(url.hash)['tgWebAppData'];
 
+        const v = chromeV();
         const res = await fetch('https://api.hamsterkombatgame.io/auth/auth-by-telegram-webapp', {
             'headers': {
                 'accept': 'application/json',
@@ -106,109 +147,18 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 'authorization': '',
                 'content-type': 'application/json',
                 'priority': 'u=1, i',
-                'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
+                'sec-ch-ua': `"Not/A)Brand";v="8", "Chromium";v="${v}", "Android WebView";v="${v}"`,
                 'sec-ch-ua-mobile': '?1',
                 'sec-ch-ua-platform': '"Android"',
                 'sec-fetch-dest': 'empty',
                 'sec-fetch-mode': 'cors',
                 'sec-fetch-site': 'same-site',
                 'x-requested-with': 'org.telegram.messenger',
-                'Referer': 'https://hamsterkombatgame.io/',
+                'Referer': `${url.origin}/`,
             },
             'body': JSON.stringify({
                 'initDataRaw': decoded,
-                'fingerprint': {
-                    'version': '4.2.1', 'visitorId': '7d88c4adf7fd1aba1ab0263d71a12a54', 'components': {
-                        'fonts': {'value': ['sans-serif-thin'], 'duration': 92},
-                        'domBlockers': {'value': [], 'duration': 41},
-                        'fontPreferences': {
-                            'value': {
-                                'default': 145.90625,
-                                'apple': 145.90625,
-                                'serif': 164.71875,
-                                'sans': 145.90625,
-                                'mono': 132.625,
-                                'min': 72.953125,
-                                'system': 145.90625,
-                            }, 'duration': 18,
-                        },
-                        'audio': {'value': 0.00007444995, 'duration': 43},
-                        'screenFrame': {'value': [0, 0, 0, 0], 'duration': 3},
-                        'canvas': null,
-                        'osCpu': {'duration': 0},
-                        'languages': {'value': [['en-US']], 'duration': 0},
-                        'colorDepth': {'value': 24, 'duration': 1},
-                        'deviceMemory': {'value': 4, 'duration': 0},
-                        'screenResolution': {'value': [860, 386], 'duration': 0},
-                        'hardwareConcurrency': {'value': 8, 'duration': 0},
-                        'timezone': {'value': 'Africa/Addis_Ababa', 'duration': 0},
-                        'sessionStorage': {'value': true, 'duration': 0},
-                        'localStorage': {'value': true, 'duration': 0},
-                        'indexedDB': {'value': true, 'duration': 0},
-                        'openDatabase': {'value': true, 'duration': 0},
-                        'cpuClass': {'duration': 0},
-                        'platform': {'value': 'Linux aarch64', 'duration': 0},
-                        'plugins': {'value': [], 'duration': 1},
-                        'touchSupport': {
-                            'value': {'maxTouchPoints': 5, 'touchEvent': true, 'touchStart': true},
-                            'duration': 0,
-                        },
-                        'vendor': {'value': 'Google Inc.', 'duration': 0},
-                        'vendorFlavors': {'value': [], 'duration': 1},
-                        'cookiesEnabled': {'value': true, 'duration': 10},
-                        'colorGamut': {'value': 'srgb', 'duration': 0},
-                        'invertedColors': {'duration': 0},
-                        'forcedColors': {'value': false, 'duration': 0},
-                        'monochrome': {'value': 0, 'duration': 0},
-                        'contrast': {'value': 0, 'duration': 0},
-                        'reducedMotion': {'value': false, 'duration': 0},
-                        'reducedTransparency': {'value': false, 'duration': 0},
-                        'hdr': {'value': false, 'duration': 0},
-                        'math': {
-                            'value': {
-                                'acos': 1.4473588658278522,
-                                'acosh': 709.889355822726,
-                                'acoshPf': 355.291251501643,
-                                'asin': 0.12343746096704435,
-                                'asinh': 0.881373587019543,
-                                'asinhPf': 0.8813735870195429,
-                                'atanh': 0.5493061443340548,
-                                'atanhPf': 0.5493061443340548,
-                                'atan': 0.4636476090008061,
-                                'sin': 0.8178819121159085,
-                                'sinh': 1.1752011936438014,
-                                'sinhPf': 2.534342107873324,
-                                'cos': -0.8390715290095377,
-                                'cosh': 1.5430806348152437,
-                                'coshPf': 1.5430806348152437,
-                                'tan': -1.4214488238747245,
-                                'tanh': 0.7615941559557649,
-                                'tanhPf': 0.7615941559557649,
-                                'exp': 2.718281828459045,
-                                'expm1': 1.718281828459045,
-                                'expm1Pf': 1.718281828459045,
-                                'log1p': 2.3978952727983707,
-                                'log1pPf': 2.3978952727983707,
-                                'powPI': 1.9275814160560204e-50,
-                            }, 'duration': 1,
-                        },
-                        'pdfViewerEnabled': {'value': false, 'duration': 0},
-                        'architecture': {'value': 127, 'duration': 0},
-                        'applePay': {'value': -1, 'duration': 0},
-                        'privateClickMeasurement': {'duration': 0},
-                        'webGlBasics': {
-                            'value': {
-                                'version': 'WebGL 1.0 (OpenGL ES 2.0 Chromium)',
-                                'vendor': 'WebKit',
-                                'vendorUnmasked': 'Qualcomm',
-                                'renderer': 'WebKit WebGL',
-                                'rendererUnmasked': 'Adreno (TM) 610',
-                                'shadingLanguageVersion': 'WebGL GLSL ES 1.0 (OpenGL ES GLSL ES 1.0 Chromium)',
-                            }, 'duration': 25,
-                        },
-                        'webGlExtensions': null,
-                    },
-                },
+                'fingerprint': fingerprint(),
             }),
             'method': 'POST',
         });
@@ -251,7 +201,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
         }
     } catch (e) {
         console.error(e);
-        await botAPI.sendMessage(chatId, 'Make sure it is a valid url', {
+        await botAPI.sendMessage(chatId, 'Make sure it is a valid hamster url', {
             reply_to_message_id: message.message_id,
         });
     }
@@ -259,8 +209,45 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     end();
 });
 
+botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.CLAIM_USERS), async ({callback_query}, ctx, end) => {
+    const chatId = callback_query.message.chat.id;
+    const messageId = callback_query.message.message_id;
+    const extra = await getAccounts(chatId);
+
+    if (extra != null)
+        await botAPI.editMessageText(chatId, messageId, 'These are your accounts', extra);
+    else
+        await botAPI.editMessageText(chatId, messageId, 'No account found');
+
+    await botAPI.answerCallbackQuery(callback_query.id);
+
+    end();
+});
+
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.all), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
+
+    if (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id))) {
+        const channel = getChannel(true);
+
+        channel.reply_markup.inline_keyboard.push([
+            {
+                text: '« Accounts',
+                callback_data: Queries.CLAIM_USERS,
+            },
+            {
+                text: '✓ Check',
+                callback_data: `claim_user_${ctx.id}`,
+            },
+        ]);
+
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, 'Please join the channel with both the current telegram account and the telegram account of the hamster account.\n\nAfter joining you can manage your account here.',
+            channel);
+
+        await botAPI.answerCallbackQuery(callback_query.id);
+
+        return end();
+    }
 
     const credential = await Credential.findOne({
         usersId: `${chatId}${ctx.id}`,
@@ -388,21 +375,6 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
     const user = ctx.user;
 
     await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
-    await botAPI.answerCallbackQuery(callback_query.id);
-
-    end();
-});
-
-botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'users'), async ({callback_query}, ctx, end) => {
-    const chatId = callback_query.message.chat.id;
-    const messageId = callback_query.message.message_id;
-    const extra = await getAccounts(chatId);
-
-    if (extra != null)
-        await botAPI.editMessageText(chatId, messageId, 'These are your accounts', extra);
-    else
-        await botAPI.editMessageText(chatId, messageId, 'No account found');
-
     await botAPI.answerCallbackQuery(callback_query.id);
 
     end();

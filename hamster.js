@@ -1,3 +1,5 @@
+const {chromeV} = require('./fingerprint');
+
 class HamsterUser {
     authToken = '';
 
@@ -222,6 +224,7 @@ class HamsterUser {
     }
 
     async req(url, body = null, overrideHeaders = {}) {
+        const v = chromeV();
         const headers = {
             'accept': '*/*',
             'accept-language': 'en-US,en;q=0.9',
@@ -230,7 +233,7 @@ class HamsterUser {
             'content-type': '',
             'pragma': 'no-cache',
             'priority': 'u=1, i',
-            'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
+            'sec-ch-ua': `"Not/A)Brand";v="8", "Chromium";v="${v}", "Android WebView";v="${v}"`,
             'sec-ch-ua-mobile': '?1',
             'sec-ch-ua-platform': '"Android"',
             'sec-fetch-dest': 'empty',
