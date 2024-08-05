@@ -97,7 +97,7 @@ async function isMember(chat_id, user_id) {
     return member.ok && ['creator', 'administrator', 'member'].includes(member?.result?.status);
 }
 
-botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}, ctx, end) => {
+botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
 
     await botAPI.sendMessage(chatId, '👋 Hi there, please send me you hamster mini app link (you can send multiple links one after the other).\n\nNeed help? watch this https://youtube.com');
@@ -315,7 +315,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'cip
 });
 
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'combo'), async ({callback_query}, ctx, end) => {
-    const chatId = callback_query.message.chat.id;
+    // const chatId = callback_query.message.chat.id;
     const user = ctx.user;
 
     const time = `come back after ${user.formatSeconds(user.nextCombo())} (hour:minute).`;
