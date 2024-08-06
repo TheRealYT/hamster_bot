@@ -50,8 +50,7 @@ class HamsterUser {
 
         return `${Array.from(this.account.accountInfo.telegramUsers).map(u => `😊 ${u.firstName} @${u.username}`).join('\n')}\n`
             + `🤵 Level ${level} 💰${coin}\n`
-            + `🪙 +${profit} per hr\n`
-            + `🗝️ ${this.getKeys()}`;
+            + `🪙 +${profit}(hr) 🗝️ ${this.getKeys()}`;
     }
 
     getCombos() {
