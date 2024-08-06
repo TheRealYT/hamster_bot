@@ -49,12 +49,17 @@ class HamsterUser {
         const coin = new Intl.NumberFormat().format(Math.round(this.syncData.clickerUser.balanceCoins));
 
         return `${Array.from(this.account.accountInfo.telegramUsers).map(u => `😊 ${u.firstName} @${u.username}`).join('\n')}\n`
-            + `🤵 Level ${level}\t🪙 +${profit} per hr\n`
-            + `💰 ${coin}`;
+            + `🤵 Level ${level} 💰${coin}\n`
+            + `🪙 +${profit} per hr\n`
+            + `🗝️ ${this.getKeys()}`;
     }
 
     getCombos() {
         return this.updates.dailyCombo.upgradeIds;
+    }
+
+    getKeys() {
+        return this.syncData.clickerUser.balanceKeys;
     }
 
     formatSeconds(seconds) {
@@ -78,7 +83,7 @@ class HamsterUser {
     nextReward() {
         const now = new Date();
         const zeroDay = new Date(0);
-        const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),  zeroDay.getHours() - zeroDay.getUTCHours()).getTime();
+        const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), zeroDay.getHours() - zeroDay.getUTCHours()).getTime();
         const tomorrow = new Date(today + (24 * 3600 * 1000)).getTime();
 
         const number = Math.round((tomorrow - now.getTime()) / 1000);
