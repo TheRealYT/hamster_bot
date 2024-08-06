@@ -49,8 +49,8 @@ class HamsterUser {
         const coin = new Intl.NumberFormat().format(Math.round(this.syncData.clickerUser.balanceCoins));
 
         return `${Array.from(this.account.accountInfo.telegramUsers).map(u => `😊 ${u.firstName} @${u.username}`).join('\n')}\n`
-            + `🤵 Level ${level} 💰${coin}\n`
-            + `🪙 +${profit}(hr) 🗝️ ${this.getKeys()}`;
+            + `🤵 Level ${level}  💰${coin}\n`
+            + `🪙 +${profit}(hr)  🗝️ ${this.getKeys()}`;
     }
 
     getCombos() {
