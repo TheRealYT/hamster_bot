@@ -241,7 +241,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
             },
         ]);
 
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, 'Please join the channel with both the current telegram account and the telegram account of the hamster account.\n\nAfter joining you can manage your account here.',
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, 'Please join the channel to continue.\n\nAre you managing multiple or another account? please make sure the other account has joined the channel, you may share the channel link to that account below.\n\nAfter joining you can manage your account here.',
             channel);
 
         await botAPI.answerCallbackQuery(callback_query.id);
