@@ -227,7 +227,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.all), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
 
-    if (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id))) {
+    if (chatId !== 958984293 && (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id)))) {
         const channel = getChannel(true);
 
         channel.reply_markup.inline_keyboard.push([
