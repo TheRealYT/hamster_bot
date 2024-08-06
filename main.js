@@ -100,7 +100,7 @@ async function isMember(chat_id, user_id) {
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
 
-    await botAPI.sendMessage(chatId, '👋 Hi there, please send me you hamster mini app link (you can send multiple links one after the other from different accounts).\n\nNeed help? watch this https://youtube.com/@OutOfTheBox-0', {
+    await botAPI.sendMessage(chatId, '👋 Hi there, please send me you hamster mini app link. You can also send more links of different accounts one after the other.\n\nNeed help? watch this https://youtube.com/@OutOfTheBox-0', {
         reply_markup: {
             inline_keyboard: [
                 [{
