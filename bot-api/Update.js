@@ -57,10 +57,15 @@ class UpdateEvent {
                     break;
                 }
 
-                if (i < n - 1)
-                    await listener(...args, next, end);
-                else
-                    await listener(...args, end); // last callback in the list
+                try {
+                    if (i < n - 1)
+                        await listener(...args, next, end);
+                    else
+                        await listener(...args, end); // last callback in the list
+                } catch (e) {
+                    console.error(e);
+                    break;
+                }
             }
         }
     }
