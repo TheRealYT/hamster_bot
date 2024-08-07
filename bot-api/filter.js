@@ -3,6 +3,11 @@ function privateMessage({message}, ctx, next) {
         next();
 }
 
+function privateInline({inline_query}, ctx, next) {
+    if (inline_query.from.is_bot === true || inline_query.chat_type !== 'sender')
+        next();
+}
+
 function privateQuery({callback_query}, ctx, next) {
     if (callback_query.from.is_bot === true || callback_query.message.chat.type !== 'private')
         next();
@@ -48,6 +53,7 @@ function context(key, value) {
 
 module.exports = {
     privateMessage,
+    privateInline,
     privateQuery,
     callbackData,
     message,

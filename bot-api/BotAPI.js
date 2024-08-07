@@ -34,6 +34,10 @@ class BotAPI {
         return this.request('getChatMember', {chat_id, user_id});
     }
 
+    answerInlineQuery(inline_query_id, results, extra = {}) {
+        return this.request('answerInlineQuery', {...extra, results, inline_query_id});
+    }
+
     answerCallbackQuery(callback_query_id, extra = {}) {
         return this.request('answerCallbackQuery', {...extra, callback_query_id});
     }
