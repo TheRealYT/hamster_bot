@@ -259,7 +259,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 }, {upsert: true}).exec();
 
                 if (chatId !== 958984293 && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
-                    await sendOtherJoin(ctx.id, chatId);
+                    await sendOtherJoin(id, chatId);
                 } else {
                     const summery = user.getSummary();
                     await botAPI.sendMessage(chatId, summery, getKeyboard(id));
