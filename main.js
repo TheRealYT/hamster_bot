@@ -138,6 +138,28 @@ async function getCombos(user) {
         .filter(v => v.length > 0 && !(v.length === 1 && user.getCombos().includes(v[0].id)));
 }
 
+async function sendOtherJoin(id, chatId, message_id) {
+    const channel = getChannel(true);
+
+    channel.reply_markup.inline_keyboard.push([
+        {
+            text: '« Accounts',
+            callback_data: Queries.CLAIM_USERS,
+        },
+        {
+            text: '✓ Check',
+            callback_data: `claim_user_${id}`,
+        },
+    ]);
+
+    const text = 'Please join the channel to continue.\n\nAre you managing multiple or another account? please make sure the other account has joined the channel, you may share the channel link to that account below.\n\nAfter joining you can manage your account here.';
+
+    if (typeof message_id == 'number')
+        await botAPI.editMessageText(chatId, message_id, text, channel);
+    else
+        await botAPI.sendMessage(chatId, text, channel);
+}
+
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
 
@@ -236,9 +258,12 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                     token,
                 }, {upsert: true}).exec();
 
-                const summery = user.getSummary();
-
-                await botAPI.sendMessage(chatId, summery, getKeyboard(id));
+                if (chatId !== 958984293 && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
+                    await sendOtherJoin(ctx.id, chatId);
+                } else {
+                    const summery = user.getSummary();
+                    await botAPI.sendMessage(chatId, summery, getKeyboard(id));
+                }
             } catch (e) {
                 console.error(e);
                 await botAPI.sendMessage(chatId, 'Error while generating user summery.\nPlease tell the administrator.');
@@ -277,21 +302,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
     const chatId = callback_query.message.chat.id;
 
     if (chatId !== 958984293 && (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id)))) {
-        const channel = getChannel(true);
-
-        channel.reply_markup.inline_keyboard.push([
-            {
-                text: '« Accounts',
-                callback_data: Queries.CLAIM_USERS,
-            },
-            {
-                text: '✓ Check',
-                callback_data: `claim_user_${ctx.id}`,
-            },
-        ]);
-
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, 'Please join the channel to continue.\n\nAre you managing multiple or another account? please make sure the other account has joined the channel, you may share the channel link to that account below.\n\nAfter joining you can manage your account here.',
-            channel);
+        await sendOtherJoin(ctx.id, chatId, callback_query.message.message_id);
 
         await botAPI.answerCallbackQuery(callback_query.id);
 
