@@ -7,6 +7,7 @@ const {HamsterUser} = require('./hamster');
 const {urlParseHashParams} = require('./urlDecoder');
 const {Credential} = require('./User');
 const {fingerprint, chromeV} = require('./fingerprint');
+const {Combo} = require('./Combo');
 
 const API_KEY = process.env.BOT_TOKEN;
 const botAPI = new BotServer(API_KEY);
@@ -97,6 +98,46 @@ async function isMember(chat_id, user_id) {
     return member.ok && ['creator', 'administrator', 'member'].includes(member?.result?.status);
 }
 
+async function updateCombos(upgradeIds = [], nextComboMs) {
+    if (upgradeIds.length < 1 || upgradeIds.length > 3)
+        return;
+
+    const combo = await Combo.findOne({name: 'combo'}).exec();
+    if (combo == null) {
+        await new Combo({upgradeIds, date: new Date(Date.now() + nextComboMs)}).save();
+        return;
+    }
+
+    const date = new Date(Date.now() + nextComboMs);
+    if (combo.date.getTime() !== date.getTime()) {
+        combo.date = date;
+        combo.upgradeIds = upgradeIds;
+        await combo.save();
+        return;
+    }
+
+    const newCombos = [];
+
+    for (const upgradeId of upgradeIds)
+        if (!combo.upgradeIds.includes(upgradeId))
+            newCombos.push(upgradeId);
+
+    if (newCombos.length > 0) {
+        combo.upgradeIds.push(...newCombos);
+        await combo.save();
+    }
+}
+
+async function getCombos(user) {
+    const combo = (await Combo.findOne({name: 'combo', date: {$gt: new Date()}}).exec())?.upgradeIds ?? [];
+    if (combo.length === 0)
+        return [];
+
+    return combo
+        .map(c => user.getUpdateWithCondition(c, true))
+        .filter(v => v.length > 0 && !(v.length === 1 && user.getCombos().includes(v[0].id)));
+}
+
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
 
@@ -105,7 +146,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async (
             inline_keyboard: [
                 [{
                     text: 'Get The Link (Hamster)',
-                    url: 'https://t.me/hamster_kOmbat_bot/start?startapp=kentId1563879420'
+                    url: 'https://t.me/hamster_kOmbat_bot/start?startapp=kentId1563879420',
                 }]],
         },
     });
@@ -265,6 +306,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
         const user = new HamsterUser(credential.token);
         ctx.user = user;
         await user.init();
+        await updateCombos(user.getCombos(), user.nextCombo() * 1000);
         return;
     }
 
@@ -323,7 +365,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'cip
 });
 
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'combo'), async ({callback_query}, ctx, end) => {
-    // const chatId = callback_query.message.chat.id;
+    const chatId = callback_query.message.chat.id;
     const user = ctx.user;
 
     const time = `come back after ${user.formatSeconds(user.nextCombo())} (hour:minute).`;
@@ -332,11 +374,115 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'com
             text: `Daily combo already claimed, ${time}`,
             show_alert: true,
         });
-    } else {
+    } else if (user.getCombos().length === 3) {
+        await user.claimDailyCombo();
         await botAPI.answerCallbackQuery(callback_query.id, {
-            text: ':( Sorry, daily combo claim is not implemented yet',
+            text: `✅ Daily Combo Claimed, ${time}`,
             show_alert: true,
         });
+    } else {
+        const combo = await getCombos(user);
+
+        if (combo.length === 0)
+            await botAPI.answerCallbackQuery(callback_query.id, {
+                text: `We are still searching for today's combos, you have ${user.getCombos().length} combo(s).`,
+                show_alert: true,
+            });
+        else {
+            const num = ['1️⃣', '2️⃣', '3️⃣'];
+            let str = '';
+
+            for (let i1 = 0; i1 < combo.length; i1++) {
+                const update = combo[i1];
+                for (let i = 0; i < update.length; i++) {
+                    const combo = update[i];
+                    const format = new Intl.NumberFormat().format;
+
+                    const price = format(combo.price);
+                    const profit = format(combo.profitPerHourDelta);
+
+                    const t = i > 0 ? '  ' : '';
+                    str += `${i === 0 ? num.at(i1) ?? '' : ''}${t}${combo.name}(${combo.id})\n${t}Level ${combo.level}    💰${price}   🪙+${profit}\n${HamsterUser.mark(combo.isAvailable && !combo.isExpired)} Available\n\n`;
+
+                    if (i > 0) str += `${t}To Level ${combo.levelUp}\n\n`;
+                }
+            }
+
+            await botAPI.editMessageText(chatId, callback_query.message.message_id, str, {
+                reply_markup: {
+                    inline_keyboard: [[
+                        {
+                            text: '« Account',
+                            callback_data: `claim_user_${ctx.id}`,
+                        },
+                        {
+                            text: '✓ Confirm Buy',
+                            callback_data: `claim_buy_${ctx.id}`,
+                        },
+                    ]],
+                },
+            });
+            await botAPI.answerCallbackQuery(callback_query.id);
+        }
+    }
+
+    end();
+});
+
+botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'buy'), async ({callback_query}, ctx, end) => {
+    const chatId = callback_query.message.chat.id;
+    const user = ctx.user;
+    const updates = await getCombos(user);
+
+    if (updates.length === 0)
+        await botAPI.answerCallbackQuery(callback_query.id, {
+            text: `No combo found, we are still searching for today's combos.`,
+            show_alert: true,
+        });
+    else {
+        let str = '';
+        for (const update of updates)
+            for (const combo of update.toReversed()) {
+                while (true) {
+                    try {
+                        await user.buyUpdate(combo.id);
+                        combo.level++;
+
+                        str += `Level up ${combo.level}/${combo.levelUp ?? '-'} ${combo.name}\n`;
+
+                        if (!combo.levelUp || combo.level >= combo.levelUp)
+                            break;
+
+                        if (typeof combo.totalCooldownSeconds == 'number') {
+                            const timeout = combo.totalCooldownSeconds;
+
+                            str += `Buy "${combo.name}" after ${user.formatSeconds(timeout)}(hour:minute)\n`;
+                            break;
+                        } else {
+                            await new Promise(res => setTimeout(res, 1000));
+                        }
+                    } catch (e) {
+                        str += `${combo.name} - error ${e?.error_message ?? e?.message ?? ''}\n`;
+                        break;
+                    }
+                }
+                str += '\n\n';
+            }
+
+        if (user.getCombos().length === 3)
+            await user.claimDailyCombo();
+
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, str, {
+            reply_markup: {
+                inline_keyboard: [[
+                    {
+                        text: '« Account',
+                        callback_data: `claim_user_${ctx.id}`,
+                    },
+                ]],
+            },
+        });
+        await botAPI.answerCallbackQuery(callback_query.id);
     }
 
     end();

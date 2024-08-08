@@ -22,7 +22,7 @@ const CredentialSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-});
+}, {timestamps: true});
 
 const Credential = mongoose.model('Credential', CredentialSchema);
 
