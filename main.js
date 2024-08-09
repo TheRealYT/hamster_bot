@@ -399,6 +399,8 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'com
             text: `✅ Daily Combo Claimed, ${time}`,
             show_alert: true,
         });
+
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
     } else {
         const combo = await getCombos(user);
 
@@ -467,7 +469,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'buy
                         await user.buyUpdate(combo.id);
                         combo.level++;
 
-                        str += `Level up ${combo.level}/${combo.levelUp ?? '-'} ${combo.name}\n`;
+                        str += `✅ Level up ${combo.level}/${combo.levelUp ?? '-'} ${combo.name}\n`;
 
                         if (!combo.levelUp || combo.level >= combo.levelUp)
                             break;
@@ -475,13 +477,13 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'buy
                         if (typeof combo.totalCooldownSeconds == 'number') {
                             const timeout = combo.totalCooldownSeconds;
 
-                            str += `Buy "${combo.name}" after ${user.formatSeconds(timeout)}(hour:minute)\n`;
+                            str += `⌚ Buy "${combo.name}" after ${user.formatSeconds(timeout)}(hour:minute)\n`;
                             break;
                         } else {
                             await new Promise(res => setTimeout(res, 1000));
                         }
                     } catch (e) {
-                        str += `${combo.name} - error ${e?.error_message ?? e?.message ?? ''}\n`;
+                        str += `❌ ${combo.name} - error ${e?.message?.error_message ?? 'Can\'t buy'}\n`;
                         break;
                     }
                 }
