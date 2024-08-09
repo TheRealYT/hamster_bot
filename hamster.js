@@ -259,7 +259,7 @@ class HamsterUser {
         });
 
         if (!res.ok)
-            throw new Error(await res.json());
+            throw new Error((await res.json())?.error_message);
 
         return res;
     }
