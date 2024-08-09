@@ -98,17 +98,25 @@ async function isMember(chat_id, user_id) {
     return member.ok && ['creator', 'administrator', 'member'].includes(member?.result?.status);
 }
 
+function getComboTime(nextComboMs) {
+    const date = new Date(Date.now() + nextComboMs);
+    date.setUTCSeconds(0);
+    date.setUTCMilliseconds(0);
+
+    return date;
+}
+
 async function updateCombos(upgradeIds = [], nextComboMs) {
     if (upgradeIds.length < 1 || upgradeIds.length > 3)
         return;
 
     const combo = await Combo.findOne({name: 'combo'}).exec();
     if (combo == null) {
-        await new Combo({upgradeIds, date: new Date(Date.now() + nextComboMs)}).save();
+        await new Combo({upgradeIds, date: getComboTime(nextComboMs)}).save();
         return;
     }
 
-    const date = new Date(Date.now() + nextComboMs);
+    const date = getComboTime(nextComboMs);
     if (combo.date.getTime() !== date.getTime()) {
         combo.date = date;
         combo.upgradeIds = upgradeIds;
