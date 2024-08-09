@@ -478,7 +478,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'buy
                             await new Promise(res => setTimeout(res, 1000));
                         }
                     } catch (e) {
-                        str += `❌ ${combo.name} - error ${e?.message?.error_message ?? 'Can\'t buy'}\n`;
+                        str += `❌ ${combo.name} - error ${typeof e?.message == 'string' ? e.message : 'can\'t buy'}\n`;
                         break;
                     }
                 }
