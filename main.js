@@ -99,11 +99,7 @@ async function isMember(chat_id, user_id) {
 }
 
 function getComboTime(nextComboMs) {
-    const date = new Date(Date.now() + nextComboMs);
-    date.setUTCSeconds(0);
-    date.setUTCMilliseconds(0);
-
-    return date;
+    return new Date(Date.now() + nextComboMs);
 }
 
 async function updateCombos(upgradeIds = [], nextComboMs) {
@@ -116,9 +112,8 @@ async function updateCombos(upgradeIds = [], nextComboMs) {
         return;
     }
 
-    const date = getComboTime(nextComboMs);
-    if (combo.date.getTime() !== date.getTime()) {
-        combo.date = date;
+    if (combo.date <= new Date()) {
+        combo.date = getComboTime(nextComboMs);
         combo.upgradeIds = upgradeIds;
         await combo.save();
         return;
