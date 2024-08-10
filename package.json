@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
+    "tunnel:ngrok": "ngrok http --domain=guided-mastiff-tightly.ngrok-free.app 3000",
     "tunnel:pinggy": "ssh -p 443 -R0:127.0.0.1:3000 a.pinggy.io",
     "tunnel:serveo": "ssh -R 80:127.0.0.1:3000 serveo.net"
   },
