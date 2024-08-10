@@ -1,5 +1,20 @@
 const {chromeV} = require('./fingerprint');
 
+const GAMES = {
+    BIKE: {
+        promoId: '43e35910-c168-4634-ad4f-52fd764a843f',
+    },
+    CLONE: {
+        promoId: 'fe693b26-b342-4159-8808-15e3ff7f8767',
+    },
+    CUBE: {
+        promoId: 'b4170868-cef0-424f-8eb9-be0622e8e8e3',
+    },
+    TRAIN: {
+        promoId: 'c4480ac7-e178-4973-8061-9ed5b2e17954',
+    },
+};
+
 class HamsterUser {
     authToken = '';
 
@@ -30,6 +45,28 @@ class HamsterUser {
         return atob(t);
     }
 
+    getKeysCount(gameName) {
+        if (!(gameName in GAMES))
+            return null;
+
+        const game = GAMES[gameName];
+
+        const promo = this.games.promos.find(p => p.promoId === game.promoId);
+
+        if (promo === undefined)
+            return null;
+
+        const state = this.games.states.find(p => p.promoId === game.promoId);
+
+        if (state === undefined)
+            return null;
+
+        return {
+            keys: state.receiveKeysToday,
+            max: promo.keysPerDay,
+        };
+    }
+
     getPromoSummary() {
         const store = {};
 
@@ -41,15 +78,23 @@ class HamsterUser {
             };
         }
 
+        let time = null;
+
         for (const state of this.games.states) {
-            if (state.promoId in store)
+            if (state.promoId in store) {
                 store[state.promoId].keys = state.receiveKeysToday;
+                if (time == null)
+                    time = state.receiveKeysRefreshSec;
+            }
         }
 
         let str = '';
 
         for (const game of Object.values(store))
             str += `🔑 ${game.keys} / ${game.max}  🎮 ${game.title}\n`;
+
+        if (typeof time == 'number')
+            str += `\nGame Time: ${this.formatSeconds(time)}\n`;
 
         return str;
     }
@@ -218,7 +263,7 @@ class HamsterUser {
 
         if (index !== -1) {
             this.games.states[index] = data.promoState;
-            return data.promoState.receiveKeysToday
+            return data.promoState.receiveKeysToday;
         }
 
         return null;

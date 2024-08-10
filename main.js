@@ -5,9 +5,12 @@ const {privateMessage, message, callbackData, privateQuery, context} = require('
 const {Queries} = require('./constants');
 const {HamsterUser} = require('./hamster');
 const {urlParseHashParams} = require('./urlDecoder');
-const {Credential} = require('./User');
+const {Credential} = require('./Credential');
 const {fingerprint, chromeV} = require('./fingerprint');
 const {Combo} = require('./Combo');
+const {Promo} = require('./Promo');
+
+const CreatorID = 958984293;
 
 const API_KEY = process.env.BOT_TOKEN;
 const botAPI = new BotServer(API_KEY);
@@ -235,17 +238,41 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     end();
 });
 
-const pattern = /^(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
+const pattern = /(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}/gm;
+const singleExp = /^(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
 const promoExp = /^promo_(?<id>[0-9]+)_(?<promoCode>(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3})$/;
 
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end) => {
     const chatId = message.chat.id;
+    const promoCodes = new Set();
 
-    if (pattern.test(message.text)) {
-        const extra = await getAccounts(chatId, (id) => `promo_${id}_${message.text}`, (name) => `🔑 ${name}`);
-        if (extra != null) {
-            await botAPI.sendMessage(chatId, `Select account to apply "${message.text}"\nDO NOT CLICK MORE THAN ONCE`, extra);
-        } else
+    if (chatId === CreatorID) {
+        let matches = null;
+        while (matches = pattern.exec(message.text)) {
+            promoCodes.add(matches[0]);
+        }
+
+        if (promoCodes.size > 1 || message.text?.startsWith('+')) {
+            try {
+
+                await Promo.create(Array.from(promoCodes).map(code => ({code, ownerId: chatId})));
+                await botAPI.sendMessage(chatId, 'Promo codes added');
+            } catch (e) {
+                await botAPI.sendMessage(chatId, 'An error occurred, a key may exist');
+            }
+            return end();
+        }
+    } else if (singleExp.test(message.text)) {
+        promoCodes.add(message.text);
+    }
+
+    if (promoCodes.size === 1) {
+        const promoCode = promoCodes.values().next().value;
+        const extra = await getAccounts(chatId, (id) => `promo_${id}_${promoCode}`, (name) => `🔑 ${name}`);
+
+        if (extra != null)
+            await botAPI.sendMessage(chatId, `Select account to apply "${promoCode}"\nDO NOT CLICK MORE THAN ONCE`, extra);
+        else
             await botAPI.sendMessage(chatId, 'Please add account to apply promo codes');
 
         end();
@@ -324,7 +351,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 memo.setUser(chatId, id, user);
                 cleanAccounts(chatId);
 
-                if (chatId !== 958984293 && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
+                if (chatId !== CreatorID && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
                     await sendOtherJoin(id, chatId);
                 } else {
                     const summery = getUserSummery(user);
@@ -341,7 +368,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
         }
     } catch (e) {
         console.error(e);
-        await botAPI.sendMessage(chatId, 'Make sure it is a valid hamster url', {
+        await botAPI.sendMessage(chatId, 'Make sure it is a valid hamster url or a valid promo code.', {
             reply_to_message_id: message.message_id,
         });
     }
@@ -388,7 +415,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.all), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
 
-    if (chatId !== 958984293 && (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id)))) {
+    if (chatId !== CreatorID && (!(await isMember(process.env.TG_CHANNEL, chatId)) || !(await isMember(process.env.TG_CHANNEL, +ctx.id)))) {
         await sendOtherJoin(ctx.id, chatId, callback_query.message.message_id);
 
         await botAPI.answerCallbackQuery(callback_query.id);
