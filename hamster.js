@@ -7,6 +7,7 @@ class HamsterUser {
     config = {};
     syncData = {};
     updates = {};
+    games = {};
 
     constructor(authToken) {
         this.authToken = authToken;
@@ -17,6 +18,7 @@ class HamsterUser {
         this.config = await this.getConfig();
         this.syncData = await this.getSyncData();
         this.updates = await this.getUpdates();
+        this.games = await this.getGames();
     }
 
     static mark(v) {
@@ -28,15 +30,39 @@ class HamsterUser {
         return atob(t);
     }
 
+    getPromoSummary() {
+        const store = {};
+
+        for (const promo of this.games.promos) {
+            store[promo.promoId] = {
+                title: promo.title.en,
+                keys: 0,
+                max: promo.keysPerDay,
+            };
+        }
+
+        for (const state of this.games.states) {
+            if (state.promoId in store)
+                store[state.promoId].keys = state.receiveKeysToday;
+        }
+
+        let str = '';
+
+        for (const game of Object.values(store))
+            str += `🔑 ${game.keys} / ${game.max}  🎮 ${game.title}\n`;
+
+        return str;
+    }
+
     getSummary() {
         const dailyReward = this.syncData.clickerUser.tasks.streak_days;
         const dailyCipher = this.config.dailyCipher;
 
         return this.getUser()
-            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1 Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}\n`
-            + `${HamsterUser.mark(this.isCipherClaimed())} 2 Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
-            + `${HamsterUser.mark(this.isComboClaimed())} 3 Daily Combo (${this.formatSeconds(this.nextCombo())}) - ${this.getCombos().join(', ')}\n`
-            + `${HamsterUser.mark(this.isMiniGameClaimed())} 4 Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
+            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}\n`
+            + `${HamsterUser.mark(this.isCipherClaimed())} 2️⃣ Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
+            + `${HamsterUser.mark(this.isComboClaimed())} 3️⃣ Daily Combo (${this.formatSeconds(this.nextCombo())})\n       ${this.getCombos().map((v, i) => `${i + 1}. ${v}`).join('\n       ')}\n`
+            + `${HamsterUser.mark(this.isMiniGameClaimed())} 4️⃣ Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
     }
 
     getUsernames() {
@@ -49,8 +75,8 @@ class HamsterUser {
         const coin = new Intl.NumberFormat().format(Math.round(this.syncData.clickerUser.balanceCoins));
 
         return `${Array.from(this.account.accountInfo.telegramUsers).map(u => `😊 ${u.firstName} @${u.username}`).join('\n')}\n`
-            + `🤵 Level ${level}  💰${coin}\n`
-            + `🪙 +${profit}(hr)  🗝️ ${this.getKeys()}`;
+            + `💰${coin}   🤵 Level ${level}\n`
+            + `🪙 +${profit}(hr)  🔑 ${this.getKeys()}`;
     }
 
     getCombos() {
@@ -176,6 +202,26 @@ class HamsterUser {
         return this.account.accountInfo.id;
     }
 
+    async applyPromo(promoCode) {
+        if (typeof promoCode != 'string')
+            throw new Error('Invalid promo code');
+
+        const data = await (await this.req('clicker/apply-promo', JSON.stringify({
+            promoCode,
+        }), {
+            'accept': 'application/json',
+            'content-type': 'application/json',
+        })).json();
+
+        this.syncData.clickerUser = data.clickerUser;
+        const index = this.games.states.findIndex(s => s.promoId === data.promoState.promoId);
+
+        if (index !== -1)
+            this.games.states[index] = data.promoState;
+
+        return true;
+    }
+
     async buyUpdate(updateId) {
         if (typeof updateId != 'string')
             throw new Error('Invalid update id');
@@ -278,6 +324,10 @@ class HamsterUser {
 
     async getUpdates() {
         return await (await this.req('clicker/upgrades-for-buy')).json();
+    }
+
+    async getGames() {
+        return await (await this.req('clicker/get-promos')).json();
     }
 }
 

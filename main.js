@@ -163,6 +163,10 @@ async function sendOtherJoin(id, chatId, message_id) {
         await botAPI.sendMessage(chatId, text, channel);
 }
 
+function getUserSummery(user) {
+    return user.getSummary() + '\n\n' + user.getPromoSummary();
+}
+
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
 
@@ -264,7 +268,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 if (chatId !== 958984293 && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
                     await sendOtherJoin(id, chatId);
                 } else {
-                    const summery = user.getSummary();
+                    const summery = getUserSummery(user);
                     await botAPI.sendMessage(chatId, summery, getKeyboard(id));
                 }
             } catch (e) {
@@ -349,7 +353,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'rew
             show_alert: true,
         });
 
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     }
 
     end();
@@ -372,7 +376,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'cip
             show_alert: true,
         });
 
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     }
 
     end();
@@ -395,7 +399,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'com
             show_alert: true,
         });
 
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     } else {
         const combo = await getCombos(user);
 
@@ -524,7 +528,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
             show_alert: true,
         });
 
-        await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+        await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     }
 
     end();
@@ -535,7 +539,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'ref
     const user = ctx.user;
 
     await botAPI.answerCallbackQuery(callback_query.id);
-    await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+    await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
 
     end();
 });
@@ -544,7 +548,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
     const chatId = callback_query.message.chat.id;
     const user = ctx.user;
 
-    await botAPI.editMessageText(chatId, callback_query.message.message_id, user.getSummary(), getKeyboard(user.getId()));
+    await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     await botAPI.answerCallbackQuery(callback_query.id);
 
     end();
