@@ -69,17 +69,29 @@ function getKeyboard(id) {
     };
 }
 
+const accounts = new Map();
+
+function cleanAccounts(chatId) {
+    accounts.delete(chatId);
+}
+
 async function getAccounts(chatId) {
-    const found = await Credential.find({
-        userId: chatId.toString(),
-    }).exec();
+    if (!accounts.has(chatId)) {
+        const lists = await Credential.find({
+            userId: chatId.toString(),
+        }).exec();
+
+        accounts.set(chatId, lists.map(v => ({name: v.name, id: v.targetUserId})));
+    }
+
+    const found = accounts.get(chatId);
 
     if (found.length === 0)
         return null;
 
     const inline_keyboard = [];
 
-    for (const {name, targetUserId: id} of found) {
+    for (const {name, id} of found) {
         inline_keyboard.push([{
             text: name,
             callback_data: `claim_user_${id}`,
@@ -166,6 +178,33 @@ async function sendOtherJoin(id, chatId, message_id) {
 function getUserSummery(user) {
     return user.getSummary() + '\n\n' + user.getPromoSummary();
 }
+
+const memo = (() => {
+    const users = new Map();
+
+    return {
+        async getUser(chatId, id) {
+            const usersId = `${chatId}${id}`;
+
+            if (!users.has(usersId)) {
+                const credential = await Credential.findOne({
+                    usersId,
+                }).exec();
+
+                const user = new HamsterUser(credential.token);
+                await user.init();
+
+                users.set(usersId, user);
+            }
+
+            return users.get(usersId);
+        },
+        setUser(chatId, id, user) {
+            const usersId = `${chatId}${id}`;
+            users.set(usersId, user);
+        },
+    };
+})();
 
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/start'), async ({message}) => {
     const chatId = message.chat.id;
@@ -265,6 +304,9 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                     token,
                 }, {upsert: true}).exec();
 
+                memo.setUser(chatId, id, user);
+                cleanAccounts(chatId);
+
                 if (chatId !== 958984293 && id !== chatId && !await isMember(process.env.TG_CHANNEL, id)) {
                     await sendOtherJoin(id, chatId);
                 } else {
@@ -316,14 +358,10 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(Queries.
         return end();
     }
 
-    const credential = await Credential.findOne({
-        usersId: `${chatId}${ctx.id}`,
-    }).exec();
+    const user = await memo.getUser(chatId, ctx.id);
 
-    if (credential != null) {
-        const user = new HamsterUser(credential.token);
+    if (user != null) {
         ctx.user = user;
-        await user.init();
         await updateCombos(user.getCombos(), user.nextCombo() * 1000);
         return;
     }
@@ -537,6 +575,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
 botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'refresh'), async ({callback_query}, ctx, end) => {
     const chatId = callback_query.message.chat.id;
     const user = ctx.user;
+    await user.init();
 
     await botAPI.answerCallbackQuery(callback_query.id);
     await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
