@@ -75,7 +75,7 @@ function cleanAccounts(chatId) {
     accounts.delete(chatId);
 }
 
-async function getAccounts(chatId) {
+async function getAccounts(chatId, callBackData = (id) => `claim_user_${id}`, text = (name) => name) {
     if (!accounts.has(chatId)) {
         const lists = await Credential.find({
             userId: chatId.toString(),
@@ -93,8 +93,8 @@ async function getAccounts(chatId) {
 
     for (const {name, id} of found) {
         inline_keyboard.push([{
-            text: name,
-            callback_data: `claim_user_${id}`,
+            text: text(name),
+            callback_data: callBackData(id),
         }]);
     }
 
@@ -235,6 +235,23 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     end();
 });
 
+const pattern = /^(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
+const promoExp = /^promo_(?<id>[0-9]+)_(?<promoCode>(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3})$/;
+
+botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end) => {
+    const chatId = message.chat.id;
+
+    if (pattern.test(message.text)) {
+        const extra = await getAccounts(chatId, (id) => `promo_${id}_${message.text}`, (name) => `🔑 ${name}`);
+        if (extra != null) {
+            await botAPI.sendMessage(chatId, `Select account to apply "${message.text}"\nDO NOT CLICK MORE THAN ONCE`, extra);
+        } else
+            await botAPI.sendMessage(chatId, 'Please add account to apply promo codes');
+
+        end();
+    }
+});
+
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, message('/accounts'), async ({message}, ctx, end) => {
     const chatId = message.chat.id;
 
@@ -328,6 +345,27 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
             reply_to_message_id: message.message_id,
         });
     }
+
+    end();
+});
+
+botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(promoExp), async ({callback_query}, ctx, end) => {
+    const chatId = callback_query.message.chat.id;
+    const messageId = callback_query.message.message_id;
+    const user = await memo.getUser(chatId, ctx.id);
+
+    if (user != null) {
+        try {
+            const keys = await user.applyPromo(ctx.promoCode);
+            await botAPI.editMessageText(chatId, messageId, `🔑 Promo code applied${keys != null ? ' ↑' + keys.toString() : ''}`);
+        } catch (e) {
+            await botAPI.editMessageText(chatId, messageId, `❌ ${typeof e?.message == 'string' ? e.message : 'Promo code failed'}`);
+        }
+    } else {
+        await botAPI.editMessageText(chatId, messageId, '❌ Account not found');
+    }
+
+    await botAPI.answerCallbackQuery(callback_query.id);
 
     end();
 });

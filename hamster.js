@@ -216,10 +216,12 @@ class HamsterUser {
         this.syncData.clickerUser = data.clickerUser;
         const index = this.games.states.findIndex(s => s.promoId === data.promoState.promoId);
 
-        if (index !== -1)
+        if (index !== -1) {
             this.games.states[index] = data.promoState;
+            return data.promoState.receiveKeysToday
+        }
 
-        return true;
+        return null;
     }
 
     async buyUpdate(updateId) {
