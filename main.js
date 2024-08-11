@@ -15,6 +15,8 @@ const CreatorID = 958984293;
 const API_KEY = process.env.BOT_TOKEN;
 const botAPI = new BotServer(API_KEY);
 
+const accounts = new Map();
+
 function getChannel(share = false) {
     const inline_keyboard = [
         [{
@@ -71,8 +73,6 @@ function getKeyboard(id) {
         },
     };
 }
-
-const accounts = new Map();
 
 function cleanAccounts(chatId) {
     accounts.delete(chatId);
@@ -154,6 +154,38 @@ async function getCombos(user) {
     return combo
         .map(c => user.getUpdateWithCondition(c, true))
         .filter(v => v.length > 0 && !(v.length === 1 && user.getCombos().includes(v[0].id)));
+}
+
+async function buyUpdates(updates, user) {
+    let str = '';
+    for (const update of updates)
+        for (const combo of update.toReversed()) {
+            while (true) {
+                try {
+                    await user.buyUpdate(combo.id);
+                    combo.level++;
+
+                    str += `✅ Level up ${combo.level}/${combo.levelUp ?? '-'} ${combo.name}\n`;
+
+                    if (!combo.levelUp || combo.level >= combo.levelUp)
+                        break;
+
+                    if (typeof combo.totalCooldownSeconds == 'number') {
+                        const timeout = combo.totalCooldownSeconds;
+
+                        str += `⌚ Buy "${combo.name}" after ${user.formatSeconds(timeout)}(hour:minute)\n`;
+                        break;
+                    } else {
+                        await new Promise(res => setTimeout(res, 1000));
+                    }
+                } catch (e) {
+                    str += `❌ ${combo.name} - error ${typeof e?.message == 'string' ? e.message : 'can\'t buy'}\n`;
+                    break;
+                }
+            }
+            str += '\n\n';
+        }
+    return str;
 }
 
 async function sendOtherJoin(id, chatId, message_id) {
@@ -238,6 +270,31 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     end();
 });
 
+botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end) => {
+    const chatId = message.chat.id;
+
+    if (message.text?.startsWith('/combo')) {
+        const texts = message.text
+            .split('/combo')[1]
+            .split(',')
+            .map(t => t.trim())
+            .filter(t => t.length > 0);
+
+        if (texts.length > 0) {
+            const extra = await getAccounts(chatId, (id) => `combo_buy_${id}`, (name) => `🎴 ${name}`);
+
+            if (extra != null) {
+                await botAPI.sendMessage(chatId, `Select account to buy updates\n 🎴 ${texts.join('\n 🎴 ')}`, extra);
+            } else
+                await botAPI.sendMessage(chatId, 'Please add account to buy combo updates');
+        } else {
+            await botAPI.sendMessage(chatId, 'Send combos comma separated.\n\nExample /combo hamster youtube, usdt on, hamster green');
+        }
+
+        end();
+    }
+});
+
 const pattern = /(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}/gm;
 const singleExp = /^(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
 const promoExp = /^promo_(?<id>[0-9]+)_(?<promoCode>(BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3})$/;
@@ -254,7 +311,6 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
 
         if (promoCodes.size > 1 || message.text?.startsWith('+')) {
             try {
-
                 await Promo.create(Array.from(promoCodes).map(code => ({code, ownerId: chatId})));
                 await botAPI.sendMessage(chatId, 'Promo codes added');
             } catch (e) {
@@ -372,6 +428,96 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
             reply_to_message_id: message.message_id,
         });
     }
+
+    end();
+});
+
+botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, callbackData(/^combo_buy_(?<id>[0-9]+)(?<confirm>yes|no|)$/), async ({callback_query}, ctx, end) => {
+    const chatId = callback_query.message.chat.id;
+    const messageId = callback_query.message.message_id;
+    const confirm = ctx.confirm === 'yes' ? true : (ctx.confirm === 'no' ? false : null);
+
+    const combos = (() => {
+        const pattern = confirm != null ? /🎴 .*\((.*)\)/gm : /🎴 (.*)/gm;
+        const texts = [];
+        let matches = null;
+
+        while (matches = pattern.exec(callback_query.message.text))
+            texts.push(matches[1]);
+
+        return texts;
+    })();
+
+    if (combos.length > 0) {
+        const user = await memo.getUser(chatId, ctx.id);
+        if (user != null) {
+            const updates = combos
+                .map(c => user.getUpdateWithCondition(c, true))
+                .filter(v => v.length > 0);
+
+            if (confirm === true) {
+                let str = await buyUpdates(updates, user);
+
+                await botAPI.editMessageText(chatId, callback_query.message.message_id, str, {
+                    reply_markup: {
+                        inline_keyboard: [[
+                            {
+                                text: '« Account',
+                                callback_data: `claim_user_${ctx.id}`,
+                            },
+                        ]],
+                    },
+                });
+            } else if (confirm === false) {
+                const extra = await getAccounts(chatId, (id) => `combo_buy_${id}`, (name) => `🎴 ${name}`);
+
+                if (extra != null) {
+                    await botAPI.editMessageText(chatId, messageId, `Select account to buy updates\n 🎴 ${updates.map(u => u[0].name).join('\n 🎴 ')}`, extra);
+                } else {
+                    await botAPI.editMessageText(chatId, messageId, 'Please add account to buy combo updates');
+                }
+            } else {
+                let str = '';
+
+                for (let i1 = 0; i1 < updates.length; i1++) {
+                    const update = updates[i1];
+                    for (let i = 0; i < update.length; i++) {
+                        const combo = update[i];
+                        const format = new Intl.NumberFormat().format;
+
+                        const price = format(combo.price);
+                        const profit = format(combo.profitPerHourDelta);
+
+                        const t = i > 0 ? '  ' : '';
+                        str += `${i === 0 ? '🎴 ' : ''}${t}${combo.name}(${combo.id})\n${t}Level ${combo.level}    💰${price}   🪙+${profit}\n${HamsterUser.mark(combo.isAvailable && !combo.isExpired)} Available\n\n`;
+
+                        if (i > 0) str += `\n\n`;
+                    }
+                }
+
+                await botAPI.editMessageText(chatId, callback_query.message.message_id, str, {
+                    reply_markup: {
+                        inline_keyboard: [[
+                            {
+                                text: '« Choose',
+                                callback_data: `combo_buy_${ctx.id}no`,
+                            },
+                            {
+                                text: '✓ Confirm Buy',
+                                callback_data: `combo_buy_${ctx.id}yes`,
+                            },
+                        ]],
+                    },
+                });
+            }
+        } else {
+            await botAPI.editMessageText(chatId, messageId, '❌ Account not found');
+        }
+    } else {
+        await botAPI.editMessageText(chatId, messageId, '❌ No combos were specified, please use /combo command first');
+    }
+
+    await botAPI.answerCallbackQuery(callback_query.id);
 
     end();
 });
@@ -563,34 +709,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'buy
             show_alert: true,
         });
     else {
-        let str = '';
-        for (const update of updates)
-            for (const combo of update.toReversed()) {
-                while (true) {
-                    try {
-                        await user.buyUpdate(combo.id);
-                        combo.level++;
-
-                        str += `✅ Level up ${combo.level}/${combo.levelUp ?? '-'} ${combo.name}\n`;
-
-                        if (!combo.levelUp || combo.level >= combo.levelUp)
-                            break;
-
-                        if (typeof combo.totalCooldownSeconds == 'number') {
-                            const timeout = combo.totalCooldownSeconds;
-
-                            str += `⌚ Buy "${combo.name}" after ${user.formatSeconds(timeout)}(hour:minute)\n`;
-                            break;
-                        } else {
-                            await new Promise(res => setTimeout(res, 1000));
-                        }
-                    } catch (e) {
-                        str += `❌ ${combo.name} - error ${typeof e?.message == 'string' ? e.message : 'can\'t buy'}\n`;
-                        break;
-                    }
-                }
-                str += '\n\n';
-            }
+        let str = await buyUpdates(updates, user);
 
         if (user.getCombos().length === 3)
             await user.claimDailyCombo();

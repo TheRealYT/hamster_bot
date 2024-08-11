@@ -102,11 +102,12 @@ class HamsterUser {
     getSummary() {
         const dailyReward = this.syncData.clickerUser.tasks.streak_days;
         const dailyCipher = this.config.dailyCipher;
+        const combos = this.getCombos();
 
         return this.getUser()
             + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}\n`
             + `${HamsterUser.mark(this.isCipherClaimed())} 2️⃣ Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
-            + `${HamsterUser.mark(this.isComboClaimed())} 3️⃣ Daily Combo (${this.formatSeconds(this.nextCombo())})\n       ${this.getCombos().map((v, i) => `${i + 1}. ${v}`).join('\n       ')}\n`
+            + `${HamsterUser.mark(this.isComboClaimed())} 3️⃣ Daily Combo (${this.formatSeconds(this.nextCombo())})${combos.length > 0 ? '\n' : ''}       ${combos.map((v, i) => `${i + 1}. ${v}`).join('\n       ')}\n`
             + `${HamsterUser.mark(this.isMiniGameClaimed())} 4️⃣ Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
     }
 
