@@ -3,12 +3,13 @@ const {BotServer} = require('./bot-api/BotServer');
 const {UpdateType} = require('./bot-api/Update');
 const {privateMessage, message, callbackData, privateQuery, context} = require('./bot-api/filter');
 const {Queries} = require('./constants');
-const {HamsterUser} = require('./hamster');
+const {HamsterUser, GAMES} = require('./hamster');
 const {urlParseHashParams} = require('./urlDecoder');
 const {Credential} = require('./Credential');
 const {fingerprint, chromeV} = require('./fingerprint');
 const {Combo} = require('./Combo');
 const {Promo} = require('./Promo');
+const {Promise} = require('mongoose');
 
 const CreatorID = 958984293;
 
@@ -48,7 +49,7 @@ function getKeyboard(id) {
                     callback_data: `claim_reward_${id}`,
                 }],
                 [{
-                    text: '🗝️ Claim Daily Cipher',
+                    text: '🔓 Claim Daily Cipher',
                     callback_data: `claim_cipher_${id}`,
                 }],
                 [{
@@ -58,6 +59,10 @@ function getKeyboard(id) {
                 [{
                     text: '🕹️ Claim Mini Game',
                     callback_data: `claim_game_${id}`,
+                }],
+                [{
+                    text: '🔑 Claim Keys',
+                    callback_data: `claim_keys_${id}`,
                 }],
                 [
                     {
@@ -314,6 +319,7 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
                 await Promo.create(Array.from(promoCodes).map(code => ({code, ownerId: chatId})));
                 await botAPI.sendMessage(chatId, 'Promo codes added');
             } catch (e) {
+                console.error(e);
                 await botAPI.sendMessage(chatId, 'An error occurred, a key may exist');
             }
             return end();
@@ -773,6 +779,64 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'use
 
     await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
     await botAPI.answerCallbackQuery(callback_query.id);
+
+    end();
+});
+
+botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'keys'), async ({callback_query}, ctx, end) => {
+    const chatId = callback_query.message.chat.id;
+    const user = ctx.user;
+
+    const games = Object
+        .keys(GAMES)
+        .map(name => ({name, ...user.getKeysCount(name)}))
+        .filter(g => g.keys < g.max);
+
+    if (games.length > 0) {
+        const map = games.map(async g => (await Promo.find({
+            ownerId: chatId,
+            code: {$regex: '^' + g.name},
+            used: false,
+        }).limit(g.max - g.keys).exec()).map(({code}) => code));
+
+        const promoKeys = (await global.Promise.all(map)).flat();
+
+        if (promoKeys.length > 0) {
+            let cnt = 0;
+            for (const key of promoKeys) {
+                try {
+                    await user.applyPromo(key);
+                    cnt++;
+                    try {
+                        await Promo.deleteOne({code: key});
+                    } catch (e) {
+                    }
+                } catch (e) {
+                    try {
+                        await Promo.findOneAndUpdate({code: key}, {used: true});
+                    } catch (e) {
+                    }
+                }
+            }
+
+            await botAPI.answerCallbackQuery(callback_query.id, {
+                text: promoKeys.join(`🔑 ${cnt} keys applied!`),
+                show_alert: true,
+            });
+
+            await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
+        } else {
+            await botAPI.answerCallbackQuery(callback_query.id, {
+                text: 'Sorry :( you have no promo code or key.',
+                show_alert: true,
+            });
+        }
+    } else {
+        await botAPI.answerCallbackQuery(callback_query.id, {
+            text: 'Game not found, you may have all keys for today.',
+            show_alert: true,
+        });
+    }
 
     end();
 });

@@ -46,6 +46,8 @@ class HamsterUser {
     }
 
     getKeysCount(gameName) {
+        const state = {keys: 0, max: 0};
+
         if (!(gameName in GAMES))
             return null;
 
@@ -53,18 +55,15 @@ class HamsterUser {
 
         const promo = this.games.promos.find(p => p.promoId === game.promoId);
 
-        if (promo === undefined)
-            return null;
+        if (promo !== undefined)
+            state.max = promo.keysPerDay;
 
-        const state = this.games.states.find(p => p.promoId === game.promoId);
+        const gState = this.games.states.find(p => p.promoId === game.promoId);
 
-        if (state === undefined)
-            return null;
+        if (gState !== undefined)
+            state.keys = gState.receiveKeysToday;
 
-        return {
-            keys: state.receiveKeysToday,
-            max: promo.keysPerDay,
-        };
+        return state;
     }
 
     getPromoSummary() {
@@ -379,4 +378,4 @@ class HamsterUser {
     }
 }
 
-module.exports = {HamsterUser};
+module.exports = {HamsterUser, GAMES};

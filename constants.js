@@ -7,7 +7,8 @@ const ClaimQueries = {
     CLAIM_USER: 'user',
     CLAIM_USERS: 'users',
     CLAIM_BUY: 'buy',
-    all: /^claim_(?<claim>reward|cipher|combo|game|refresh|user|users|buy)_(?<id>[0-9]+)$/,
+    CLAIM_KEYS: 'keys',
+    all: /^claim_(?<claim>reward|cipher|combo|game|refresh|user|users|buy|keys)_(?<id>[0-9]+)$/,
 };
 
 module.exports = {Queries: ClaimQueries};
