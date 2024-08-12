@@ -747,7 +747,11 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
             show_alert: true,
         });
     } else {
-        await user.claimMiniGame(async () => {
+        await botAPI.answerCallbackQuery(callback_query.id, {
+            text: `Sorry :( Daily mini game claim is currently not working.`,
+            show_alert: true,
+        });
+        /*await user.claimMiniGame(async () => {
             await new Promise(res => setTimeout(res, Math.round(15_000 * Math.random())));
             return `0${Math.random() * (399999999 - 200000000) + 200000000}`;
         });
@@ -757,7 +761,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
         });
 
         await botAPI.editMessageText(chatId, callback_query.message.message_id, getUserSummery(user), getKeyboard(user.getId()));
-    }
+    */}
 
     end();
 });
