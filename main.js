@@ -9,7 +9,6 @@ const {Credential} = require('./Credential');
 const {fingerprint, chromeV} = require('./fingerprint');
 const {Combo} = require('./Combo');
 const {Promo} = require('./Promo');
-const {Promise} = require('mongoose');
 
 const CreatorID = 958984293;
 
@@ -750,7 +749,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'gam
         try {
             await user.claimMiniGame(async () => {
                 await new Promise(res => setTimeout(res, Math.round(15_000 * Math.random())));
-                return `0${Math.random() * (999999999 - 800000000) + 800000000}`;
+                return `0${Math.random() * (399999999 - 200000000) + 200000000}`;
             });
             await botAPI.answerCallbackQuery(callback_query.id, {
                 text: `✅ Daily Key Claimed, ${time}`,
@@ -806,7 +805,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'key
             used: false,
         }).limit(g.max - g.keys).exec()).map(({code}) => code));
 
-        const promoKeys = (await global.Promise.all(map)).flat();
+        const promoKeys = (await Promise.all(map)).flat();
 
         if (promoKeys.length > 0) {
             let cnt = 0;
