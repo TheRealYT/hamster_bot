@@ -13,6 +13,9 @@ const GAMES = {
     TRAIN: {
         promoId: 'c4480ac7-e178-4973-8061-9ed5b2e17954',
     },
+    MERGE: {
+        promoId: 'dc128d28-c45b-411c-98ff-ac7726fbaea4',
+    },
 };
 
 class HamsterUser {
