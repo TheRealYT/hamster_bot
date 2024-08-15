@@ -826,7 +826,7 @@ botAPI.update.use(UpdateType.CALLBACK_QUERY, privateQuery, context('claim', 'key
             }
 
             await botAPI.answerCallbackQuery(callback_query.id, {
-                text: promoKeys.join(`🔑 ${cnt} keys applied!`),
+                text: `${promoKeys.join()} \n🔑 ${cnt} keys applied!`,
                 show_alert: true,
             });
 
