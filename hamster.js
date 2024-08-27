@@ -231,8 +231,10 @@ class HamsterUser {
         if (typeof cipherFunc != 'function')
             throw new Error('Expected cipher function');
 
+        const miniGameId = this.config.dailyKeysMiniGame.Candles.id;
+
         await this.req('clicker/start-keys-minigame', {
-            miniGameId: this.config.dailyKeysMiniGame.Candles.id,
+            miniGameId,
         }, {
             'accept': 'application/json',
             'content-type': 'application/json',
@@ -241,6 +243,7 @@ class HamsterUser {
         const cipher = await cipherFunc();
         const data = await (await this.req('clicker/claim-daily-keys-minigame', JSON.stringify({
             cipher: btoa(cipher + '|' + this.getId()),
+            miniGameId,
         }), {
             'accept': 'application/json',
             'content-type': 'application/json',
