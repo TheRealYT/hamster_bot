@@ -389,4 +389,7 @@ class HamsterUser {
     }
 }
 
+new HamsterUser("1721713119445538znxPDqkKoZXKTIxXv3kxeZ7HTUQuCOIhH5rvsJDHyFfA0jMjP3HqrFB0pEtOj6198172172")
+    .init()
+
 module.exports = {HamsterUser, GAMES};
