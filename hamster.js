@@ -142,7 +142,7 @@ class HamsterUser {
     }
 
     nextMiniGame() {
-        return this.config.dailyKeysMiniGames.Candles.remainSeconds;
+        return this.config.dailyKeysMiniGames?.Candles?.remainSeconds ?? 0;
     }
 
     nextCombo() {
@@ -164,7 +164,7 @@ class HamsterUser {
     }
 
     isMiniGameClaimed() {
-        return this.config.dailyKeysMiniGames.Candles.isClaimed;
+        return this.config.dailyKeysMiniGames?.Candles?.isClaimed ?? true;
     }
 
     isComboClaimed() {
