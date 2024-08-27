@@ -299,9 +299,9 @@ botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end
     }
 });
 
-const pattern = /(MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}/gm;
-const singleExp = /^(MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
-const promoExp = /^promo_(?<id>[0-9]+)_(?<promoCode>(MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3})$/;
+const pattern = /(TWERK|MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}/gm;
+const singleExp = /^(TWERK|MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3}$/;
+const promoExp = /^promo_(?<id>[0-9]+)_(?<promoCode>(TWERK|MERGE|BIKE|CLONE|CUBE|TRAIN)-[0-9A-Z]{3}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{3})$/;
 
 botAPI.update.use(UpdateType.MESSAGE, privateMessage, async ({message}, ctx, end) => {
     const chatId = message.chat.id;
