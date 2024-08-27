@@ -142,7 +142,7 @@ class HamsterUser {
     }
 
     nextMiniGame() {
-        return this.config.dailyKeysMiniGame.Candles.remainSeconds;
+        return this.config.dailyKeysMiniGames.Candles.remainSeconds;
     }
 
     nextCombo() {
@@ -164,7 +164,7 @@ class HamsterUser {
     }
 
     isMiniGameClaimed() {
-        return this.config.dailyKeysMiniGame.Candles.isClaimed;
+        return this.config.dailyKeysMiniGames.Candles.isClaimed;
     }
 
     isComboClaimed() {
@@ -231,7 +231,7 @@ class HamsterUser {
         if (typeof cipherFunc != 'function')
             throw new Error('Expected cipher function');
 
-        const miniGameId = this.config.dailyKeysMiniGame.Candles.id;
+        const miniGameId = this.config.dailyKeysMiniGames.Candles.id;
 
         await this.req('clicker/start-keys-minigame', {
             miniGameId,
@@ -249,7 +249,7 @@ class HamsterUser {
             'content-type': 'application/json',
         })).json();
 
-        this.config.dailyKeysMiniGame = data.dailyKeysMiniGame;
+        this.config.dailyKeysMiniGames = data.dailyKeysMiniGames;
 
         return true;
     }
@@ -388,5 +388,8 @@ class HamsterUser {
         return await (await this.req('clicker/get-promos')).json();
     }
 }
+
+new HamsterUser("1721713119445538znxPDqkKoZXKTIxXv3kxeZ7HTUQuCOIhH5rvsJDHyFfA0jMjP3HqrFB0pEtOj6198172172")
+    .init()
 
 module.exports = {HamsterUser, GAMES};
