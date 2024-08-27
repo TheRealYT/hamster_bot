@@ -142,7 +142,7 @@ class HamsterUser {
     }
 
     nextMiniGame() {
-        return this.config.dailyKeysMiniGame.remainSeconds;
+        return this.config.dailyKeysMiniGame.Candles.remainSeconds;
     }
 
     nextCombo() {
@@ -164,7 +164,7 @@ class HamsterUser {
     }
 
     isMiniGameClaimed() {
-        return this.config.dailyKeysMiniGame.isClaimed;
+        return this.config.dailyKeysMiniGame.Candles.isClaimed;
     }
 
     isComboClaimed() {
@@ -231,7 +231,12 @@ class HamsterUser {
         if (typeof cipherFunc != 'function')
             throw new Error('Expected cipher function');
 
-        await this.req('clicker/start-keys-minigame');
+        await this.req('clicker/start-keys-minigame', {
+            miniGameId: this.config.dailyKeysMiniGame.Candles.id,
+        }, {
+            'accept': 'application/json',
+            'content-type': 'application/json',
+        });
 
         const cipher = await cipherFunc();
         const data = await (await this.req('clicker/claim-daily-keys-minigame', JSON.stringify({
