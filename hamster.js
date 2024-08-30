@@ -241,8 +241,8 @@ class HamsterUser {
         });
 
         const cipher = await cipherFunc();
-        const sig = 'lqWKOzi0Y0yKWr9XV8IfAp8NYLFpUsJMYbIb0NHVC6U=';
-        const score = '3449404800';
+        const sig = '5dTLCZxh4IgRhMl2v3Baf0y8JA9mcA+FcToNUGwLm4Q=';
+        const score = '3449923200';
 
         const data = await (await this.req('clicker/claim-daily-keys-minigame', JSON.stringify({
             cipher: btoa(cipher + '|' + this.getId() + '|' + miniGameId + '|' + score + '|' + sig),
