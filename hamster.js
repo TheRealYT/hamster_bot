@@ -102,12 +102,12 @@ class HamsterUser {
     }
 
     getSummary() {
-        const dailyReward = this.syncData.clickerUser.tasks.streak_days;
+        const dailyReward = this.syncData.clickerUser.tasks.streak_days_special;
         const dailyCipher = this.config.dailyCipher;
         const combos = this.getCombos();
 
         return this.getUser()
-            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}\n`
+            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}D, ${dailyReward.weeks}W\n`
             + `${HamsterUser.mark(this.isCipherClaimed())} 2️⃣ Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
             + `${HamsterUser.mark(this.isComboClaimed())} 3️⃣ Daily Combo (${this.formatSeconds(this.nextCombo())})${combos.length > 0 ? '\n' : ''}       ${combos.map((v, i) => `${i + 1}. ${v}`).join('\n       ')}\n`
             + `${HamsterUser.mark(this.isMiniGameClaimed())} 4️⃣ Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
@@ -178,7 +178,7 @@ class HamsterUser {
     isRewardClaimed() {
         const now = new Date();
         const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 3);
-        const date = new Date(this.syncData.clickerUser.tasks.streak_days.completedAt);
+        const date = new Date(this.syncData.clickerUser.tasks.streak_days_special.completedAt);
         return date.getTime() >= today.getTime();
     }
 
@@ -186,13 +186,13 @@ class HamsterUser {
         if (this.isRewardClaimed())
             return true;
 
-        const data = await (await this.req('clicker/check-task', '{"taskId":"streak_days"}', {
+        const data = await (await this.req('clicker/check-task', '{"taskId":"streak_days_special"}', {
             'accept': 'application/json',
             'content-type': 'application/json',
         })).json();
 
         this.syncData.clickerUser = data.clickerUser;
-        this.syncData.clickerUser.tasks.streak_days = data.task;
+        this.syncData.clickerUser.tasks.streak_days_special = data.task;
 
         return true;
     }
