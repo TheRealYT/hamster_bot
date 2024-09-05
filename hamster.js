@@ -107,7 +107,7 @@ class HamsterUser {
         const combos = this.getCombos();
 
         return this.getUser()
-            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward.days}D, ${dailyReward.weeks}W\n`
+            + `\n\n${HamsterUser.mark(this.isRewardClaimed())} 1️⃣ Daily Reward (${this.formatSeconds(this.nextReward())}) - Day ${dailyReward?.days ?? 0}D, ${dailyReward?.weeks ?? 0}W\n`
             + `${HamsterUser.mark(this.isCipherClaimed())} 2️⃣ Daily Cipher (${this.formatSeconds(this.nextCipher())}) - ${HamsterUser.cipherDecode(dailyCipher.cipher)}\n`
             + `${HamsterUser.mark(this.isComboClaimed())} 3️⃣ Daily Combo (${this.formatSeconds(this.nextCombo())})${combos.length > 0 ? '\n' : ''}       ${combos.map((v, i) => `${i + 1}. ${v}`).join('\n       ')}\n`
             + `${HamsterUser.mark(this.isMiniGameClaimed())} 4️⃣ Mini Game (${this.formatSeconds(this.nextMiniGame())})`;
