@@ -178,7 +178,7 @@ class HamsterUser {
     isRewardClaimed() {
         const now = new Date();
         const today = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 3);
-        const date = new Date(this.syncData.clickerUser.tasks?.streak_days_special.completedAt);
+        const date = new Date(this.syncData.clickerUser.tasks.streak_days_special?.completedAt);
         return date.getTime() >= today.getTime();
     }
 
